@@ -5,11 +5,14 @@ import altair as alt
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 # Load trained models
-model_blasting_p20 = joblib.load("C:/P.Nobahar/Thesis/Meta models/3M scenarios/Results/blasting/best_model_p20.pkl")
-model_blasting_p50 = joblib.load("C:/P.Nobahar/Thesis/Meta models/3M scenarios/Results/blasting/best_model_p50.pkl")
-model_blasting_p80 = joblib.load("C:/P.Nobahar/Thesis/Meta models/3M scenarios/Results/blasting/best_model_p80.pkl")
+
+# Load models using relative paths
+model_blasting_p20 = joblib.load(os.path.join(os.getcwd(), "best_model_p20.pkl"))
+model_blasting_p50 = joblib.load(os.path.join(os.getcwd(), "best_model_p50.pkl"))
+model_blasting_p80 = joblib.load(os.path.join(os.getcwd(), "best_model_p80.pkl"))
 
 # Prediction function
 def blasting_prediction(ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod):
