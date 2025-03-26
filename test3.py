@@ -10,10 +10,14 @@ import os
 import os
 import joblib
 
-# Define the directory where your model files are stored
-model_dir = os.path.join(os.getcwd(), "models")
+# Get the directory where the current script is located
+base_dir = os.path.dirname(os.path.abspath(__file__))
+model_dir = os.path.join(base_dir, "models")
 
-# Create an empty dictionary to hold the models
+# Optional: list files in model_dir for debugging
+print("Files in model directory:", os.listdir(model_dir))
+
+# Load your model
 models = {}
 
 # ------------------------------
