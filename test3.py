@@ -28,9 +28,9 @@ models["OnScreen_p50"] = joblib.load(os.path.join(base_dir, "best_model_OS_p50.p
 models["OnScreen_p80"] = joblib.load(os.path.join(base_dir, "best_model_OS_p80.pkl"))
 models["OnScreen_Massflow"] = joblib.load(os.path.join(base_dir, "best_model_OS_Mass.pkl"))
 
-models["UnderScreen_p20"] = joblib.load(os.path.join(base_dir, "best_model_US_P20.pkl"))
-models["UnderScreen_p50"] = joblib.load(os.path.join(base_dir, "best_model_US_P50.pkl"))
-models["UnderScreen_p80"] = joblib.load(os.path.join(base_dir, "best_model_US_P80.pkl"))
+models["UnderScreen_p20"] = joblib.load(os.path.join(base_dir, "best_model_US_p20.pkl"))
+models["UnderScreen_p50"] = joblib.load(os.path.join(base_dir, "best_model_US_p50.pkl"))
+models["UnderScreen_p80"] = joblib.load(os.path.join(base_dir, "best_model_US_p80.pkl"))
 models["UnderScreen_Massflow"] = joblib.load(os.path.join(base_dir, "best_model_US_Mass.pkl"))
 
 # ------------------------------
