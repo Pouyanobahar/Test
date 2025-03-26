@@ -5,15 +5,11 @@ import altair as alt
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-
 import os, joblib
 
+# Path to the folder that contains test3.py
 base_dir = os.path.dirname(os.path.abspath(__file__))
-model_dir = os.path.join(base_dir, "models")
 
-
-# Load your model
 models = {}
 
 # ------------------------------
