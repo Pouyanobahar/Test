@@ -7,15 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-import os
-import joblib
+import os, joblib
 
-# Get the directory where the current script is located
 base_dir = os.path.dirname(os.path.abspath(__file__))
 model_dir = os.path.join(base_dir, "models")
 
-# Optional: list files in model_dir for debugging
-print("Files in model directory:", os.listdir(model_dir))
 
 # Load your model
 models = {}
