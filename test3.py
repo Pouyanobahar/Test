@@ -5,40 +5,41 @@ import altair as alt
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
-import os, joblib
+import os
+import joblib
 
-# Path to the folder that contains test3.py
+# Get the directory of the current script
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
 models = {}
 
 # ------------------------------
-# Load blasting models using relative paths
+# Load blasting models from the main directory
 # ------------------------------
-models["blasting_p20"] = joblib.load(os.path.join(model_dir, "best_model_p20.pkl"))
-models["blasting_p50"] = joblib.load(os.path.join(model_dir, "best_model_p50.pkl"))
-models["blasting_p80"] = joblib.load(os.path.join(model_dir, "best_model_p80.pkl"))
+models["blasting_p20"] = joblib.load(os.path.join(base_dir, "best_model_p20.pkl"))
+models["blasting_p50"] = joblib.load(os.path.join(base_dir, "best_model_p50.pkl"))
+models["blasting_p80"] = joblib.load(os.path.join(base_dir, "best_model_p80.pkl"))
 
 # ------------------------------
-# Load screening models using relative paths
+# Load screening models from the main directory
 # ------------------------------
-models["OnScreen_p20"] = joblib.load(os.path.join(model_dir, "best_model_OS_p20.pkl"))
-models["OnScreen_p50"] = joblib.load(os.path.join(model_dir, "best_model_OS_p50.pkl"))
-models["OnScreen_p80"] = joblib.load(os.path.join(model_dir, "best_model_OS_p80.pkl"))
-models["OnScreen_Massflow"] = joblib.load(os.path.join(model_dir, "best_model_OS_Mass.pkl"))
+models["OnScreen_p20"] = joblib.load(os.path.join(base_dir, "best_model_OS_p20.pkl"))
+models["OnScreen_p50"] = joblib.load(os.path.join(base_dir, "best_model_OS_p50.pkl"))
+models["OnScreen_p80"] = joblib.load(os.path.join(base_dir, "best_model_OS_p80.pkl"))
+models["OnScreen_Massflow"] = joblib.load(os.path.join(base_dir, "best_model_OS_Mass.pkl"))
 
-models["UnderScreen_p20"] = joblib.load(os.path.join(model_dir, "best_model_US_P20.pkl"))
-models["UnderScreen_p50"] = joblib.load(os.path.join(model_dir, "best_model_US_P50.pkl"))
-models["UnderScreen_p80"] = joblib.load(os.path.join(model_dir, "best_model_US_P80.pkl"))
-models["UnderScreen_Massflow"] = joblib.load(os.path.join(model_dir, "best_model_US_Mass.pkl"))
+models["UnderScreen_p20"] = joblib.load(os.path.join(base_dir, "best_model_US_P20.pkl"))
+models["UnderScreen_p50"] = joblib.load(os.path.join(base_dir, "best_model_US_P50.pkl"))
+models["UnderScreen_p80"] = joblib.load(os.path.join(base_dir, "best_model_US_P80.pkl"))
+models["UnderScreen_Massflow"] = joblib.load(os.path.join(base_dir, "best_model_US_Mass.pkl"))
 
 # ------------------------------
-# Load crushing models using relative paths
+# Load crushing models from the main directory
 # ------------------------------
-models["Crusher_p20"] = joblib.load(os.path.join(model_dir, "best_model_Crusher_p20.pkl"))
-models["Crusher_p50"] = joblib.load(os.path.join(model_dir, "best_model_Crusher_p50.pkl"))
-models["Crusher_p80"] = joblib.load(os.path.join(model_dir, "best_model_Crusher_p80.pkl"))
-models["Crusher_Mass"] = joblib.load(os.path.join(model_dir, "best_model_Crusher_Mass.pkl"))
+models["Crusher_p20"] = joblib.load(os.path.join(base_dir, "best_model_Crusher_p20.pkl"))
+models["Crusher_p50"] = joblib.load(os.path.join(base_dir, "best_model_Crusher_p50.pkl"))
+models["Crusher_p80"] = joblib.load(os.path.join(base_dir, "best_model_Crusher_p80.pkl"))
+models["Crusher_Mass"] = joblib.load(os.path.join(base_dir, "best_model_Crusher_Mass.pkl"))
 
 
 # Prediction Functions
