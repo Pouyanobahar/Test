@@ -3,6 +3,9 @@ pandas
 numpy
 joblib
 matplotlib
-seaborn
+altair
 shap
 scikit-learn
+plotly
+folium
+streamlit-folium
