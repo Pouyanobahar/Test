@@ -962,3 +962,5 @@ elif current_page == "📍 Location":
     st.write("Location visualization and analysis content goes here.")
 
 elif current_page == "🎯 Optimization":
+    st.title("Optimization Settings")
+    st.write("Optimization settings and recommendations content goes here.")
