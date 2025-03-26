@@ -189,6 +189,11 @@ st.markdown("""
     """, unsafe_allow_html=True)
 # ------------------------------
 # Main Page Display
+current_page = st.sidebar.radio(
+    "Menu",
+    options=["👁️ Overview", "💥 Blasting", "🥅 Screening", "⚙️ Crusher", "📍 Location", "🎯 Optimization"]
+)
+
 # ------------------------------
 if current_page == "👁️ Overview":
     st.title("Mining Process Overview")
