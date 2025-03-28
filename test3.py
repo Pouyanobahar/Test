@@ -200,6 +200,18 @@ if current_page == "👁️ Overview":
 
     # Example columns for metrics
     col1, col2, col3, col4 = st.columns(4)
+    import streamlit as st
+
+# Make sure this runs BEFORE you try to read process_data
+if "process_data" not in st.session_state:
+    st.session_state["process_data"] = {
+        "blasting": {"p20": 0, "p50": 0, "p80": 0},
+        "screening": {
+            "onscreen": {"p20": 0, "p50": 0, "p80": 0, "mass": 0},
+            "underscreen": {"p20": 0, "p50": 0, "p80": 0, "mass": 0},
+        },
+        "crushing": {"p20": 0, "p50": 0, "p80": 0, "power": 0},
+    }
     blasting_p80 = st.session_state.process_data['blasting']['p80']
     screening_underscreen_p80 = st.session_state.process_data['screening']['underscreen']['p80']
     crushing_p80 = st.session_state.process_data['crushing']['p80']
