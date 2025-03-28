@@ -16,7 +16,6 @@ from streamlit_folium import st_folium
 
 # Get the directory of the current script
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
 models = {}
 
 # ------------------------------
