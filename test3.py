@@ -494,104 +494,134 @@ elif current_page == "💥 Blasting":
         col1_sa, col2_sa, col3_sa = st.columns(3)
         metrics = [("P20", col1_sa), ("P50", col2_sa), ("P80", col3_sa)]
         for metric, col in metrics:
-            with col:
-                st.subheader(f"Sensitivity Analysis for {metric}")
-                chosen_model = models.get(f"blasting_{metric.lower()}")
-                if chosen_model is None:
-                    st.error(f"Model for blasting {metric} is not loaded.")
-                    continue
-                explainer = shap.Explainer(chosen_model)
-                sensitivity_data = []
-                for val in sensitivity_ranges[sensitivity_param]:
-                    modified_input = base_input.copy()
-                    modified_input[sensitivity_param] = val
-                    shap_values_metric = explainer(modified_input)
-                    prediction_metric = chosen_model.predict(modified_input)[0]
-                    param_index = list(base_input.columns).index(sensitivity_param)
-                    param_impact = shap_values_metric.values[0][param_index]
-                    sensitivity_data.append({
-                        "Parameter Value": val,
-                        f"{metric} Prediction": prediction_metric,
-                        "SHAP Impact": param_impact
-                    })
-                sens_df = pd.DataFrame(sensitivity_data)
-                chart = px.line(
-                    sens_df, 
-                    x="Parameter Value", 
-                    y="SHAP Impact",
-                    title=f"SHAP Impact of {sensitivity_param} on {metric}",
-                    labels={"Parameter Value": sensitivity_param, "SHAP Impact": f"Impact on {metric}"}
-                )
-                chart.add_hline(y=0, line_dash="dash", line_color="red")
-                st.plotly_chart(chart)
-                st.markdown("### Sensitivity Analysis Summary")
-                st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
-        st.markdown("---")
-        st.subheader("Drilling & Blasting Cost")
-        cost_cols = st.columns(4)
-        with cost_cols[0]:
-            st.markdown("### Drilling Parameters")
-            hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0)
-            stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0)
-            sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0)
-            blasting_area = st.number_input("Blasting area (m²)", min_value=500, value=2000, step=50)
-            num_holes = blasting_area // (burden * spacing)
-        with cost_cols[1]:
-            st.markdown("### Economic Parameters")
-            explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
-            detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
-            accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0)
-            labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0)
-            selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()))
-            selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()))
-            explosive_cost_per_kg = explosive_types[selected_explosive]
-            detonator_cost = detonator_types[selected_detonator]
-        def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
-            hole_diameter_m = hole_diameter_mm / 1000
-            charge_length = hole_length - stemming + sub_drilling
-            charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
-            charge_mass = charge_volume * explosive_density * 1000  # in kg
-            total_charge = charge_mass * num_holes
-            return charge_mass, total_charge
-        charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
-        total_explosive_cost = total_charge * explosive_cost_per_kg
-        total_drilling_cost = hole_length * num_holes * 50
-        total_detonator_cost = detonator_cost * num_holes
-        total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
-        cost_distribution = pd.DataFrame({
-            'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
-            'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
-        })
-        with cost_cols[2]:
-            st.subheader("Cost Distribution")
-            pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)')
-            st.plotly_chart(pie_fig, use_container_width=True)
-        with cost_cols[3]:
-            cost_subcols = st.columns(2)
-            with cost_subcols[0]:
-                st.subheader("Total Blasting Cost")
-                st.markdown(f"""
-                <div class="box">
-                <ul>
-                <li><strong>Explosives Cost:</strong> ${total_explosive_cost:.2f}</li>
-                <li><strong>Drilling Cost:</strong> ${total_drilling_cost:.2f}</li>
-                <li><strong>Detonator Cost:</strong> ${(detonator_cost*num_holes):.2f}</li>
-                <li><strong>Accessories Cost:</strong> ${accessory_cost:.2f}</li>
-                </ul>
-                <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            with cost_subcols[1]:
-                st.subheader("Total Blasting Explosives")
-                st.markdown(f"""
-                <div class="box">
-                <ul>
-                <li><strong>Total Holes:</strong> {num_holes:.2f}</li>
-                <li><strong>Total Charge:</strong> {total_charge:.2f} kg</li>
-                <li><strong>Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
-                <li><strong>Total Detonators:</strong> {num_holes:.0f}</li>
-                </div>
-                """, unsafe_allow_html=True)
+        with col:
+            st.subheader(f"Sensitivity Analysis for {metric}")
+            # Retrieve the corresponding model (e.g., "blasting_p20" for P20)
+            chosen_model = models.get(f"blasting_{metric.lower()}")
+            if chosen_model is None:
+                st.error(f"Model for blasting {metric} is not loaded.")
+                continue
+            
+            # Initialize the SHAP explainer for this model
+            explainer = shap.Explainer(chosen_model)
+            
+            sensitivity_data = []
+            for val in sensitivity_ranges[sensitivity_param]:
+                modified_input = base_input.copy()
+                modified_input[sensitivity_param] = val
+                
+                # Compute SHAP values for the modified input
+                shap_values_metric = explainer(modified_input)
+                # Get prediction for the current metric using the chosen model
+                prediction_metric = chosen_model.predict(modified_input)[0]
+                # Determine the index of the parameter to vary in the base input
+                param_index = list(base_input.columns).index(sensitivity_param)
+                # Extract the SHAP impact for that parameter
+                param_impact = shap_values_metric.values[0][param_index]
+                
+                sensitivity_data.append({
+                    "Parameter Value": val,
+                    f"{metric} Prediction": prediction_metric,
+                    "SHAP Impact": param_impact
+                })
+            
+            sens_df = pd.DataFrame(sensitivity_data)
+            chart = px.line(
+                sens_df, 
+                x="Parameter Value", 
+                y="SHAP Impact",
+                title=f"SHAP Impact of {sensitivity_param} on {metric}",
+                labels={"Parameter Value": sensitivity_param, "SHAP Impact": f"Impact on {metric}"}
+            )
+            chart.add_hline(y=0, line_dash="dash", line_color="red")
+            st.plotly_chart(chart)
+            
+            st.markdown("### Sensitivity Analysis Summary")
+            st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
+    
+    st.markdown("---")
+    st.subheader("Drilling & Blasting Cost")
+        # Layout with columns
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown("### Drilling Parameters")
+        hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0)
+        stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0)
+        sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0)
+        blasting_area = st.number_input("Blasting area (m2)", min_value=500, value=2000, step=50)
+        num_holes = blasting_area//(burden*spacing)
+
+    with col2:
+        st.markdown("### Economic Parameters")
+
+
+        explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
+        detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
+        accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0)
+        labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0)
+        selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()))
+        selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()))
+
+        explosive_cost_per_kg = explosive_types[selected_explosive]
+        detonator_cost = detonator_types[selected_detonator]
+
+    # Calculation
+    def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
+        hole_diameter_m = hole_diameter_mm / 1000
+        charge_length = hole_length - stemming + sub_drilling
+        charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
+        charge_mass = charge_volume * explosive_density * 1000  # kg
+        total_charge = charge_mass * num_holes
+        return charge_mass, total_charge
+
+    # Automatically calculate charges
+    charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
+
+    # Costs calculations
+    total_explosive_cost = total_charge * explosive_cost_per_kg
+    total_drilling_cost = hole_length * num_holes * 50  # Example drilling rate: $50/m
+    total_detonator_cost = detonator_cost * num_holes
+    total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
+    
+    cost_distribution = pd.DataFrame({
+        'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
+        'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
+    })
+
+    with col3:
+        st.subheader("Cost Distribution")
+        pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)')
+                  
+        st.plotly_chart(pie_fig, use_container_width=True)
+
+    with col4:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Total Blasting Cost")
+            st.markdown(f"""
+            <div class="box">
+            <ul>
+            <li><strong>Explosives Cost:</strong> ${total_explosive_cost:.2f}</li>
+            <li><strong>Drilling Cost:</strong> ${total_drilling_cost:.2f}</li>
+            <li><strong>Detonator Cost:</strong> ${(detonator_cost*num_holes):.2f}</li>
+            <li><strong>Accessories Cost:</strong> ${accessory_cost:.2f}</li>
+            </ul>
+            <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            st.subheader("Total Blasting Explosives")
+            st.markdown(f"""
+            <div class="box">
+            <ul>
+            <li><strong> Total Holes:</strong> {num_holes:.2f} </li>
+            <li><strong> Total Charge:</strong> {total_charge:.2f} kg</li>
+            <li><strong> Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
+            <li><strong>Total Detonators:</strong> {(num_holes):.0f}</li>
+            </div>
+            """, unsafe_allow_html=True)
 
 elif current_page == "🥅 Screening":
     st.markdown("<h1 style='font-weight:bold;'>Screening Analysis</h1>", unsafe_allow_html=True)
