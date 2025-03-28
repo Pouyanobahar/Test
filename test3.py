@@ -10,7 +10,23 @@ import plotly.graph_objects as go
 import plotly.express as px
 import folium
 from streamlit_folium import st_folium
-st.set_page_config(page_title="Mining Process Overview", layout="wide")
+
+# ------------------------------
+# Set up page config and header banner
+# ------------------------------
+st.set_page_config(
+    page_title="Mining Process Overview", 
+    layout="wide", 
+    initial_sidebar_state="expanded"
+)
+
+# Top header with logo and title (update URL to your logo as needed)
+st.markdown("""
+<div style="display:flex; align-items:center; padding:10px 0;">
+    <img src="https://via.placeholder.com/150" style="height:60px; margin-right:20px;">
+    <h1 style="color:#2D3B44; margin:0;">Mining Process Optimization Dashboard</h1>
+</div>
+""", unsafe_allow_html=True)
 
 # ------------------------------
 # Set up base directory and load models (using relative paths)
@@ -52,7 +68,6 @@ def blasting_prediction(ucs, youngs_mod, burden, spacing, hole_diameter, explosi
     model_p50 = models.get("blasting_p50")
     model_p80 = models.get("blasting_p80")
     
-    # Check if models are loaded
     if model_p20 is None or model_p50 is None or model_p80 is None:
         st.error("One or more blasting models failed to load. Please verify the file paths and that the files exist.")
         st.stop()
@@ -88,7 +103,6 @@ def screening_prediction(alpha, d50, css, p20_blast, p50_blast, p80_blast):
     return p20_os, p50_os, p80_os, mass_os, p20_us, p50_us, p80_us, mass_us, input_data
 
 def crushing_prediction(css, p20_os, p50_os, p80_os, mass_os):
-    # Use stored screening data for predictions
     p20_os = st.session_state.process_data['screening']['onscreen']['p20']
     p50_os = st.session_state.process_data['screening']['onscreen']['p50']
     p80_os = st.session_state.process_data['screening']['onscreen']['p80']
@@ -105,7 +119,6 @@ def crushing_prediction(css, p20_os, p50_os, p80_os, mass_os):
     p80_crush = models["Crusher_p80"].predict(input_data)[0]
     mass_crush = models["Crusher_Mass"].predict(input_data)[0]
     
-    # Simplified custom formula for power
     power = 150 + (0.5 * mass_os) + (100 / 2) - (css * 2)
     st.session_state.process_data['crushing'] = {
         'p20': p20_crush, 
@@ -117,32 +130,32 @@ def crushing_prediction(css, p20_os, p50_os, p80_os, mass_os):
     return p20_crush, p50_crush, p80_crush, mass_crush, power, input_data
 
 # ------------------------------
-# Visualization Helpers
+# Visualization Helper for Sankey Diagram
 # ------------------------------
 def create_sankey_diagram(total_mass, os_mass, us_mass):
+    # Unified color palette for nodes/links
+    node_colors = ["#1f78b4", "#33a02c", "#b2df8a", "#fb9a99", "#a6cee3", "#e31a1c"]
+    link_colors = [
+        "rgba(31, 120, 180, 0.4)",
+        "rgba(51, 160, 44, 0.4)",
+        "rgba(166, 206, 227, 0.4)",
+        "rgba(251, 154, 153, 0.4)",
+        "rgba(227, 26, 28, 0.4)"
+    ]
     fig = go.Figure(data=[go.Sankey(
-        domain=dict(
-            x=[0.0, 1.0],
-            y=[0.0, 1.0]
-        ),
+        domain=dict(x=[0.0, 1.0], y=[0.0, 1.0]),
         node=dict(
             pad=7.5,
             thickness=10,
             line=dict(color="black", width=0.5),
             label=["Blasting", "Screening", "On-Screen", "Crushing", "Under-Screen", "Final Product"],
-            color=["#1f78b4", "#33a02c", "#b2df8a", "#fb9a99", "#a6cee3", "#e31a1c"]
+            color=node_colors
         ),
         link=dict(
             source=[0, 1, 1, 2, 4],
             target=[1, 2, 4, 3, 5],
             value=[total_mass, os_mass, us_mass, os_mass, us_mass],
-            color=[
-                "rgba(31, 120, 180, 0.4)",
-                "rgba(51, 160, 44, 0.4)",
-                "rgba(166, 206, 227, 0.4)",
-                "rgba(251, 154, 153, 0.4)",
-                "rgba(227, 26, 28, 0.4)"
-            ]
+            color=link_colors
         )
     )])
     fig.update_layout(
@@ -155,9 +168,9 @@ def create_sankey_diagram(total_mass, os_mass, us_mass):
     return fig
 
 # ------------------------------
-# Inject Custom CSS for boxes
+# Custom CSS for Boxes & Hiding Streamlit Branding (optional)
 # ------------------------------
-box_style = """
+custom_css = """
 <style>
 .box {
     background-color: #2D3B44;
@@ -170,32 +183,25 @@ box_style = """
     color: #FFFFFF;
     margin: 0.5rem 0;
 }
+/* Optionally hide Streamlit menu and footer */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
 </style>
 """
-st.markdown(box_style, unsafe_allow_html=True)
-
-st.markdown("""
-    <style>
-    .my-box {
-        max-width: 200px;
-        margin: auto;
-        padding: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown(custom_css, unsafe_allow_html=True)
 
 # ------------------------------
-# Sidebar - Define Navigation & Parameters
+# Sidebar - Navigation & Global Parameters
 # ------------------------------
 current_page = st.sidebar.radio(
     "Menu",
     options=["👁️ Overview", "💥 Blasting", "🥅 Screening", "⚙️ Crusher", "📍 Location", "🎯 Optimization"]
 )
 
-# Define target values and economic parameters in the sidebar
-Blasting_target_p80 = st.sidebar.slider("Blasting Target P80 (mm)", 500.0, 700.0, 600.0, key="blasting_target_p80")
-Screening_target_p80 = st.sidebar.slider("Screening Target P80 (mm)", 10.0, 200.0, 60.0, key="screening_target_p80")
-Crushing_target_p80 = st.sidebar.slider("Crushing Target P80 (mm)", 10.0, 200.0, 80.0, key="crusher_target_p80")
+# Global target & economic parameters with tooltips
+Blasting_target_p80 = st.sidebar.slider("Blasting Target P80 (mm)", 500.0, 700.0, 600.0, key="blasting_target_p80", help="Desired fragmentation size for blasting")
+Screening_target_p80 = st.sidebar.slider("Screening Target P80 (mm)", 10.0, 200.0, 60.0, key="screening_target_p80", help="Desired fragmentation size for screening")
+Crushing_target_p80 = st.sidebar.slider("Crushing Target P80 (mm)", 10.0, 200.0, 80.0, key="crusher_target_p80", help="Desired fragmentation size for crushing")
 cost_per_ton = st.sidebar.number_input("Processing Cost ($/ton)", 1.0, 10.0, 2.5, step=0.1, key="cost_per_ton")
 energy_cost = st.sidebar.number_input("Energy Cost ($/kWh)", 0.05, 0.5, 0.12, step=0.01, key="energy_cost")
 
@@ -213,18 +219,19 @@ if "process_data" not in st.session_state:
     }
 
 # ------------------------------
-# Main Page Display
+# Main Page Display (Overview)
 # ------------------------------
 if current_page == "👁️ Overview":
     st.title("Mining Process Overview")
     st.write("Use this dashboard to analyze and optimize mining processes from blasting to crushing.")
-
+    
+    # Display key metrics in four equally sized columns
     col1, col2, col3, col4 = st.columns(4)
     blasting_p80 = st.session_state.process_data['blasting']['p80']
     screening_underscreen_p80 = st.session_state.process_data['screening']['underscreen']['p80']
     crushing_p80 = st.session_state.process_data['crushing']['p80']
-
-    # Calculate deltas (only if nonzero)
+    
+    # Calculate deltas if values exist
     blasting_delta = None if blasting_p80 == 0 else f"{Blasting_target_p80 - blasting_p80:.1f} mm"
     screening_delta = None if screening_underscreen_p80 == 0 else f"{Screening_target_p80 - screening_underscreen_p80:.1f} mm"
     crushing_delta = None if crushing_p80 == 0 else f"{Crushing_target_p80 - crushing_p80:.1f} mm"
@@ -232,46 +239,49 @@ if current_page == "👁️ Overview":
     with col1:
         st.markdown(f"""
         <div class="box">
-        <h3>Blasting P80</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{blasting_p80:.1f} mm</p>
-        <p style="font-size: 1.25rem;">Delta: {blasting_delta if blasting_delta is not None else 'N/A'}</p>
+            <h3>Blasting P80</h3>
+            <p style="font-size: 2rem; font-weight: bold;">{blasting_p80:.1f} mm</p>
+            <p style="font-size: 1.25rem;">Delta: {blasting_delta if blasting_delta is not None else 'N/A'}</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
         <div class="box">
-        <h3>Screening P80</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{screening_underscreen_p80:.1f} mm</p>
-        <p style="font-size: 1.25rem;">Delta: {screening_delta if screening_delta is not None else 'N/A'}</p>
+            <h3>Screening P80</h3>
+            <p style="font-size: 2rem; font-weight: bold;">{screening_underscreen_p80:.1f} mm</p>
+            <p style="font-size: 1.25rem;">Delta: {screening_delta if screening_delta is not None else 'N/A'}</p>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
         <div class="box">
-        <h3>Crushing P80</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{crushing_p80:.1f} mm</p>
-        <p style="font-size: 1.25rem;">Delta: {crushing_delta if crushing_delta is not None else 'N/A'}</p>
+            <h3>Crushing P80</h3>
+            <p style="font-size: 2rem; font-weight: bold;">{crushing_p80:.1f} mm</p>
+            <p style="font-size: 1.25rem;">Delta: {crushing_delta if crushing_delta is not None else 'N/A'}</p>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
         <div class="box">
-        <h3>Stockpile P80</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{crushing_p80/2:.1f} mm</p>
-        <p style="font-size: 1.25rem;">Delta: {crushing_delta if crushing_delta is not None else 'N/A'}</p>
+            <h3>Stockpile P80</h3>
+            <p style="font-size: 2rem; font-weight: bold;">{crushing_p80/2:.1f} mm</p>
+            <p style="font-size: 1.25rem;">Delta: {crushing_delta if crushing_delta is not None else 'N/A'}</p>
         </div>
         """, unsafe_allow_html=True)
-
+    
     st.markdown("---")
-    chart1, chart2, chart3, chart4 = st.columns(4)
-    with chart1:
+    # Use tabs to separate different chart sections
+    tab_flow, tab_energy, tab_cost, tab_location = st.tabs(["Process Flow", "Energy", "Cost", "Location"])
+    
+    with tab_flow:
         st.subheader("Process Flow Visualization")
         os_mass = st.session_state.process_data['screening']['onscreen']['mass'] or 60
         total_mass = 450
         us_mass = total_mass - os_mass
         sankey_fig = create_sankey_diagram(total_mass, os_mass, us_mass)
         st.plotly_chart(sankey_fig, use_container_width=True)
-    with chart2:
+    
+    with tab_energy:
         energy_data = {
             "Blasting": 250,
             "Screening": 150,
@@ -279,18 +289,21 @@ if current_page == "👁️ Overview":
             "Milling": 300,
             "Transportation": 200
         }
+        # Use a unified color palette for the pie chart
+        pie_colors = ['#1f78b4', '#33a02c', '#b2df8a', '#fb9a99', '#a6cee3']
         fig_energy = go.Figure(data=[go.Pie(
             labels=list(energy_data.keys()),
             values=list(energy_data.values()),
             hole=0.4,
-            marker=dict(colors=['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#c2c2f0'])
+            marker=dict(colors=pie_colors)
         )])
         fig_energy.update_layout(
             title_text="Energy Consumption by Mining Section",
             annotations=[dict(text='Energy (kWh)', x=0.5, y=0.5, font_size=15, showarrow=False)]
         )
         st.plotly_chart(fig_energy, use_container_width=True)
-    with chart3:
+    
+    with tab_cost:
         cost_data = {
             "Blasting": 2.5,
             "Screening": 1.8,
@@ -302,14 +315,15 @@ if current_page == "👁️ Overview":
             labels=list(cost_data.keys()),
             values=list(cost_data.values()),
             hole=0.4,
-            marker=dict(colors=['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#c2c2f0'])
+            marker=dict(colors=pie_colors)
         )])
         fig_cost.update_layout(
             title_text="Cost Distribution by Mining Section",
             annotations=[dict(text='Cost ($/ton)', x=0.5, y=0.5, font_size=15, showarrow=False)]
         )
         st.plotly_chart(fig_cost, use_container_width=True)
-    with chart4:
+    
+    with tab_location:
         latitude, longitude = -34.9285, 138.6007
         m = folium.Map(location=[latitude, longitude], zoom_start=3)
         folium.Marker(
@@ -319,7 +333,7 @@ if current_page == "👁️ Overview":
         ).add_to(m)
         st.subheader("Project Location")
         st_folium(m, width=500, height=400)
-
+    
     st.markdown("---")
     st.subheader("Process Optimization Recommendations")
     rec_col1, rec_col2, rec_col3 = st.columns(3)
@@ -345,39 +359,24 @@ if current_page == "👁️ Overview":
     energy_efficiency = total_power / feed_mass if feed_mass > 0 else 0
     product_quality = 100 - abs(final_p80 - Blasting_target_p80) / Blasting_target_p80 * 100 if Blasting_target_p80 > 0 else 0
     operating_cost = cost_per_ton + (energy_efficiency * energy_cost)
-    with kpi1:
-        st.markdown(f"""
-        <div class="box">
-        <h3>Total Processing Rate</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{total_power:.1f} ton/h</p>
-        <p style="font-size: 1.25rem;">Delta: {total_power if total_power is not None else 'N/A'} t/h</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with kpi2:
-        st.markdown(f"""
-        <div class="box">
-        <h3>Energy Efficiency</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{energy_efficiency:.1f} kW/h</p>
-        <p style="font-size: 1.25rem;">Delta: {energy_efficiency if energy_efficiency is not None else 'N/A'}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with kpi3:
-        st.markdown(f"""
-        <div class="box">
-        <h3>Product Quality</h3>
-        <p style="font-size: 2rem; font-weight: bold;">{product_quality:.1f} %</p>
-        <p style="font-size: 1.25rem;">Delta: {product_quality if product_quality is not None else 'N/A'}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with kpi4:
-        st.markdown(f"""
-        <div class="box">
-        <h3>Operating Cost</h3>
-        <p style="font-size: 2rem; font-weight: bold;">${product_quality:.1f}/ton</p>
-        <p style="font-size: 1.25rem;">Delta: ${product_quality if product_quality is not None else 'N/A'}/t</p>
-        </div>
-        """, unsafe_allow_html=True)
     
+    # Optionally, you can include a gauge indicator for one key metric:
+    gauge_fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = blasting_p80,
+        title = {"text": "Blasting P80"},
+        gauge = {"axis": {"range": [None, 700]},
+                 "bar": {"color": "#1f78b4"}}
+    ))
+    with kpi1:
+        st.plotly_chart(gauge_fig, use_container_width=True)
+    with kpi2:
+        st.metric("Energy Efficiency", f"{energy_efficiency:.1f} kW/h")
+    with kpi3:
+        st.metric("Product Quality", f"{product_quality:.1f} %")
+    with kpi4:
+        st.metric("Operating Cost", f"${product_quality:.1f}/ton")
+
     st.markdown("---")
     st.subheader("Report Generation")
     report_col1, report_col2 = st.columns([3, 1])
@@ -403,34 +402,36 @@ if current_page == "👁️ Overview":
             key="download_report"
         )
 
+# ------------------------------
+# Blasting Page (with Wide Left Column for Analysis)
+# ------------------------------
 elif current_page == "💥 Blasting":
     st.markdown("<h1 style='font-weight:bold;'>Blasting Analysis</h1>", unsafe_allow_html=True)
-    blast_col1, blast_col2 = st.columns(2)
-    with blast_col1:
-        st.markdown('<div class="my-box">', unsafe_allow_html=True)
-        with st.container():
-            st.subheader("Input Parameters")
-            with st.expander("Rock Properties", expanded=True):
-                ucs = st.slider("UCS (MPa)", 46.0, 60.0, 50.0, step=2.0, key="ucs_blasting")
-                youngs_mod = st.slider("Young's Modulus (GPa)", 8.0, 12.0, 10.0, step=1.0, key="youngs_mod_blasting")
-            with st.expander("Blast Design", expanded=True):
-                burden = st.slider("Burden (m)", 5.0, 8.0, 6.0, step=0.5, key="burden_blasting")
-                spacing = st.slider("Spacing (m)", 5.0, 8.0, 6.0, step=0.5, key="spacing_blasting")
-                hole_diameter = st.slider("Hole Diameter (mm)", 180, 240, 200, step=10, key="hole_diameter_blasting")
-            with st.expander("Explosive Properties", expanded=True):
-                explosive_density = st.slider("Explosives Density (g/cm³)", 0.8, 1.2, 1.0, step=0.1, key="explosive_density_blasting")
-                vod = st.slider("VOD (m/s)", 4000, 6000, 4500, step=500, key="vod_blasting")
-            powder_factor = (explosive_density*1000 * (((hole_diameter/1000)**2)/4) * 3.1415) / (burden * spacing)
-            st.info(f"Calculated Powder Factor: {powder_factor:.2f} kg/m³")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with blast_col2:
-        st.markdown('<div class="my-box">', unsafe_allow_html=True)
+    
+    # Use two columns with a wider left column (ratio 2:1)
+    wide_col, narrow_col = st.columns([2, 1])
+    
+    with narrow_col:
+        st.subheader("Input Parameters")
+        with st.expander("Rock Properties", expanded=True):
+            ucs = st.slider("UCS (MPa)", 46.0, 60.0, 50.0, step=2.0, key="ucs_blasting", help="Uniaxial Compressive Strength")
+            youngs_mod = st.slider("Young's Modulus (GPa)", 8.0, 12.0, 10.0, step=1.0, key="youngs_mod_blasting", help="Elastic modulus")
+        with st.expander("Blast Design", expanded=True):
+            burden = st.slider("Burden (m)", 5.0, 8.0, 6.0, step=0.5, key="burden_blasting", help="Distance from the free face")
+            spacing = st.slider("Spacing (m)", 5.0, 8.0, 6.0, step=0.5, key="spacing_blasting", help="Distance between blast holes")
+            hole_diameter = st.slider("Hole Diameter (mm)", 180, 240, 200, step=10, key="hole_diameter_blasting", help="Diameter of the blast hole")
+        with st.expander("Explosive Properties", expanded=True):
+            explosive_density = st.slider("Explosives Density (g/cm³)", 0.8, 1.2, 1.0, step=0.1, key="explosive_density_blasting", help="Density of the explosive")
+            vod = st.slider("VOD (m/s)", 4000, 6000, 4500, step=500, key="vod_blasting", help="Velocity of Detonation")
+        powder_factor = (explosive_density*1000 * (((hole_diameter/1000)**2)/4) * 3.1415) / (burden * spacing)
+        st.info(f"Calculated Powder Factor: {powder_factor:.2f} kg/m³")
+    
+    with wide_col:
+        st.subheader("Results & Analysis")
+        # Run blasting prediction and plot size distribution
         P20, P50, P80, input_data = blasting_prediction(
             ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod
         )
-        if P20 is None or P50 is None or P80 is None:
-            st.error("Model predictions are unavailable. Please check that all models are loaded correctly.")
-            st.stop()
         sizes = [0, P20, P50, P80, P80*1.1, P80*1.25]
         percentages = [0, 20, 50, 80, 90, 100]
         x_points = np.linspace(0, P80*1.25, 100)
@@ -438,9 +439,9 @@ elif current_page == "💥 Blasting":
         blasting_oversize_value = np.interp(10, sizes, percentages)
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=x_points, y=y_points, mode='lines', 
-                                name='Size Distribution', line=dict(color='royalblue')))
+                                 name='Size Distribution', line=dict(color='#1f78b4')))
         fig.add_trace(go.Scatter(x=sizes, y=percentages, mode='markers', 
-                                name='Key Points', marker=dict(size=10, color='red')))
+                                 name='Key Points', marker=dict(size=10, color='red')))
         fig.update_layout(
             title='Fragmentation Size Distribution',
             xaxis_title='Fragment Size (mm)',
@@ -453,14 +454,15 @@ elif current_page == "💥 Blasting":
         status = "✅ Close to target" if abs(p80_diff) < 20 else "❌ Far from target"
         st.markdown(
             f"""
-            <div style='padding:10px;border-radius:8px;border:1px solid #444;background-color:#3b3b3b;color:#FFFFFF;'>
-                <strong>Target P80: {Blasting_target_p80:.1f} mm | 
-                Difference: {p80_diff:.1f} mm | {status}</strong>
+            <div style='padding:10px; border-radius:8px; border:1px solid #444; background-color:#3b3b3b; color:#FFFFFF;'>
+                <strong>Target P80: {Blasting_target_p80:.1f} mm | Difference: {p80_diff:.1f} mm | {status}</strong>
             </div>
             """,
             unsafe_allow_html=True
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown("---")
+        # Sensitivity Analysis: Place in a wide row using 3 columns
         st.subheader("Parameter Impact Analysis")
         shap_metric = st.selectbox("Select which metric to analyze with SHAP", ["P20", "P50", "P80"], key="shap_metric_blasting")
         chosen_model = models.get(f"blasting_{shap_metric.lower()}")
@@ -472,11 +474,12 @@ elif current_page == "💥 Blasting":
                 values=shap_values.values[0], 
                 base_values=shap_values.base_values[0], 
                 data=input_data.iloc[0]
-            ), 
+            ),
             show=False
         )
         st.pyplot(fig_shap)
-    sensitivity_ranges = {
+        
+        sensitivity_ranges = {
             "Burden (m)": np.linspace(5.0, 8.0, 20),
             "Spacing (m)": np.linspace(5.0, 8.0, 20),
             "Hole Diameter (mm)": np.linspace(180, 240, 20),
@@ -485,115 +488,118 @@ elif current_page == "💥 Blasting":
             "Explosives Density - gr/cm3": np.linspace(0.8, 1.2, 20),
             "VOD - (m/s)": np.linspace(4000, 6000, 20)
         }
-    sensitivity_param = st.selectbox(
-            "Select Parameter for Sensitivity Analysis", 
-            list(sensitivity_ranges.keys()), 
-            key="sensitivity_param_blasting"
-        )
-    base_input = pd.DataFrame([[ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod]], 
+        sensitivity_param = st.selectbox("Select Parameter for Sensitivity Analysis", list(sensitivity_ranges.keys()), key="sensitivity_param_blasting")
+        base_input = pd.DataFrame([[ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod]], 
                                   columns=["UCS (MPa)", "Young's Modulus (GPa)", "Burden (m)", "Spacing (m)", "Hole Diameter (mm)", "Explosives Density - gr/cm3", "VOD - (m/s)"])
-    col1_sa, col2_sa, col3_sa = st.columns(3)
-    metrics = [("P20", col1_sa), ("P50", col2_sa), ("P80", col3_sa)]
-    for metric, col in metrics:
-        with col:
-            st.subheader(f"Sensitivity Analysis for {metric}")
-            chosen_model = models.get(f"blasting_{metric.lower()}")
-            if chosen_model is None:
-                st.error(f"Model for blasting {metric} is not loaded.")
-                continue
-            explainer = shap.Explainer(chosen_model)
-            sensitivity_data = []
-            for val in sensitivity_ranges[sensitivity_param]:
-                modified_input = base_input.copy()
-                modified_input[sensitivity_param] = val
-                shap_values_metric = explainer(modified_input)
-                prediction_metric = chosen_model.predict(modified_input)[0]
-                param_index = list(base_input.columns).index(sensitivity_param)
-                param_impact = shap_values_metric.values[0][param_index]
-                sensitivity_data.append({
-                    "Parameter Value": val,
-                    f"{metric} Prediction": prediction_metric,
-                    "SHAP Impact": param_impact
-                })
-            sens_df = pd.DataFrame(sensitivity_data)
-            chart = px.line(
-                sens_df, 
-                x="Parameter Value", 
-                y="SHAP Impact",
-                title=f"SHAP Impact of {sensitivity_param} on {metric}",
-                labels={"Parameter Value": sensitivity_param, "SHAP Impact": f"Impact on {metric}"}
-            )
-            chart.add_hline(y=0, line_dash="dash", line_color="red")
-            st.plotly_chart(chart)
-            st.markdown("### Sensitivity Analysis Summary")
-            st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
-    st.markdown("---")
-    st.subheader("Drilling & Blasting Cost")
-    cost_cols = st.columns(4)
-    with cost_cols[0]:
-        st.markdown("### Drilling Parameters")
-        hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0)
-        stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0)
-        sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0)
-        blasting_area = st.number_input("Blasting area (m²)", min_value=500, value=2000, step=50)
-        num_holes = blasting_area // (burden * spacing)
-    with cost_cols[1]:
-        st.markdown("### Economic Parameters")
-        explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
-        detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
-        accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0)
-        labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0)
-        selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()))
-        selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()))
-        explosive_cost_per_kg = explosive_types[selected_explosive]
-        detonator_cost = detonator_types[selected_detonator]
-    def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
-        hole_diameter_m = hole_diameter_mm / 1000
-        charge_length = hole_length - stemming + sub_drilling
-        charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
-        charge_mass = charge_volume * explosive_density * 1000  # in kg
-        total_charge = charge_mass * num_holes
-        return charge_mass, total_charge
-    charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
-    total_explosive_cost = total_charge * explosive_cost_per_kg
-    total_drilling_cost = hole_length * num_holes * 50
-    total_detonator_cost = detonator_cost * num_holes
-    total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
-    cost_distribution = pd.DataFrame({
-        'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
-        'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
-    })
-    with cost_cols[2]:
-        st.subheader("Cost Distribution")
-        pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)')
-        st.plotly_chart(pie_fig, use_container_width=True)
-    with cost_cols[3]:
-        cost_subcols = st.columns(2)
-        with cost_subcols[0]:
-            st.subheader("Total Blasting Cost")
-            st.markdown(f"""
-            <div class="box">
-            <ul>
-            <li><strong>Explosives Cost:</strong> ${total_explosive_cost:.2f}</li>
-            <li><strong>Drilling Cost:</strong> ${total_drilling_cost:.2f}</li>
-            <li><strong>Detonator Cost:</strong> ${(detonator_cost*num_holes):.2f}</li>
-            <li><strong>Accessories Cost:</strong> ${accessory_cost:.2f}</li>
-            </ul>
-            <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
-            </div>
-            """, unsafe_allow_html=True)
-        with cost_subcols[1]:
-            st.subheader("Total Blasting Explosives")
-            st.markdown(f"""
-            <div class="box">
-            <ul>
-            <li><strong>Total Holes:</strong> {num_holes:.2f}</li>
-            <li><strong>Total Charge:</strong> {total_charge:.2f} kg</li>
-            <li><strong>Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
-            <li><strong>Total Detonators:</strong> {num_holes:.0f}</li>
-            </div>
-            """, unsafe_allow_html=True)
+        col1_sa, col2_sa, col3_sa = st.columns(3)
+        metrics = [("P20", col1_sa), ("P50", col2_sa), ("P80", col3_sa)]
+        for metric, col in metrics:
+            with col:
+                st.subheader(f"Sensitivity Analysis for {metric}")
+                chosen_model = models.get(f"blasting_{metric.lower()}")
+                if chosen_model is None:
+                    st.error(f"Model for blasting {metric} is not loaded.")
+                    continue
+                explainer = shap.Explainer(chosen_model)
+                sensitivity_data = []
+                for val in sensitivity_ranges[sensitivity_param]:
+                    modified_input = base_input.copy()
+                    modified_input[sensitivity_param] = val
+                    shap_values_metric = explainer(modified_input)
+                    prediction_metric = chosen_model.predict(modified_input)[0]
+                    param_index = list(base_input.columns).index(sensitivity_param)
+                    param_impact = shap_values_metric.values[0][param_index]
+                    sensitivity_data.append({
+                        "Parameter Value": val,
+                        f"{metric} Prediction": prediction_metric,
+                        "SHAP Impact": param_impact
+                    })
+                sens_df = pd.DataFrame(sensitivity_data)
+                chart = px.line(
+                    sens_df, 
+                    x="Parameter Value", 
+                    y="SHAP Impact",
+                    title=f"SHAP Impact of {sensitivity_param} on {metric}",
+                    labels={"Parameter Value": sensitivity_param, "SHAP Impact": f"Impact on {metric}"}
+                )
+                chart.add_hline(y=0, line_dash="dash", line_color="red")
+                st.plotly_chart(chart)
+                st.markdown("### Sensitivity Analysis Summary")
+                st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
+        
+        st.markdown("---")
+        st.subheader("Drilling & Blasting Cost")
+        # Use four columns for cost details
+        cost_cols = st.columns(4)
+        with cost_cols[0]:
+            st.markdown("### Drilling Parameters")
+            hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0)
+            stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0)
+            sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0)
+            blasting_area = st.number_input("Blasting area (m²)", min_value=500, value=2000, step=50)
+            num_holes = blasting_area // (burden * spacing)
+        with cost_cols[1]:
+            st.markdown("### Economic Parameters")
+            explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
+            detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
+            accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0)
+            labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0)
+            selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()))
+            selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()))
+            explosive_cost_per_kg = explosive_types[selected_explosive]
+            detonator_cost = detonator_types[selected_detonator]
+        def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
+            hole_diameter_m = hole_diameter_mm / 1000
+            charge_length = hole_length - stemming + sub_drilling
+            charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
+            charge_mass = charge_volume * explosive_density * 1000  # in kg
+            total_charge = charge_mass * num_holes
+            return charge_mass, total_charge
+        charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
+        total_explosive_cost = total_charge * explosive_cost_per_kg
+        total_drilling_cost = hole_length * num_holes * 50
+        total_detonator_cost = detonator_cost * num_holes
+        total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
+        cost_distribution = pd.DataFrame({
+            'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
+            'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
+        })
+        with cost_cols[2]:
+            st.subheader("Cost Distribution")
+            pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)', color_discrete_sequence=pie_colors)
+            st.plotly_chart(pie_fig, use_container_width=True)
+        with cost_cols[3]:
+            cost_subcols = st.columns(2)
+            with cost_subcols[0]:
+                st.subheader("Total Blasting Cost")
+                st.markdown(f"""
+                <div class="box">
+                <ul>
+                <li><strong>Explosives Cost:</strong> ${total_explosive_cost:.2f}</li>
+                <li><strong>Drilling Cost:</strong> ${total_drilling_cost:.2f}</li>
+                <li><strong>Detonator Cost:</strong> ${(detonator_cost*num_holes):.2f}</li>
+                <li><strong>Accessories Cost:</strong> ${accessory_cost:.2f}</li>
+                </ul>
+                <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
+                </div>
+                """, unsafe_allow_html=True)
+            with cost_subcols[1]:
+                st.subheader("Total Blasting Explosives")
+                st.markdown(f"""
+                <div class="box">
+                <ul>
+                <li><strong>Total Holes:</strong> {num_holes:.2f}</li>
+                <li><strong>Total Charge:</strong> {total_charge:.2f} kg</li>
+                <li><strong>Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
+                <li><strong>Total Detonators:</strong> {num_holes:.0f}</li>
+                </ul>
+                </div>
+                """, unsafe_allow_html=True)
 
+# ------------------------------
+# Screening and Crusher pages remain similar...
+# (For brevity, keep your existing implementations for "🥅 Screening", "⚙️ Crusher", and "📍 Location" pages)
+# ------------------------------
 elif current_page == "🥅 Screening":
     st.markdown("<h1 style='font-weight:bold;'>Screening Analysis</h1>", unsafe_allow_html=True)
     screen_col1, screen_col2 = st.columns(2)
@@ -607,9 +613,9 @@ elif current_page == "🥅 Screening":
             st.write(f"Blasting P50: {p50_blast:.2f} mm")
             st.write(f"Blasting P80: {p80_blast:.2f} mm")
         with st.expander("Screening Parameters", expanded=True):
-            alpha = st.slider("Alpha (Deck Angle)", 8.0, 12.0, 10.0, step=0.5, help="Screen deck angle in degrees", key="alpha_screening")
-            d50 = st.slider("D50 (Cut Size)", 5.0, 9.0, 7.0, step=0.5, help="Size at which 50% of material passes", key="d50_screening")
-            css = st.slider("Screen Aperture (mm)", 5.0, 15.0, 10.0, step=1.0, help="Size of screen openings", key="css_screening")
+            alpha = st.slider("Alpha (Deck Angle)", 8.0, 12.0, 10.0, step=0.5, key="alpha_screening", help="Screen deck angle in degrees")
+            d50 = st.slider("D50 (Cut Size)", 5.0, 9.0, 7.0, step=0.5, key="d50_screening", help="Size at which 50% of material passes")
+            css = st.slider("Screen Aperture (mm)", 5.0, 15.0, 10.0, step=1.0, key="css_screening", help="Size of screen openings")
     with screen_col2:
         p20_os, p50_os, p80_os, mass_os, p20_us, p50_us, p80_us, mass_us, input_data = screening_prediction(
             alpha, d50, css, p20_blast, p50_blast, p80_blast
@@ -630,7 +636,7 @@ elif current_page == "🥅 Screening":
             pie_fig = go.Figure(data=[go.Pie(
                 labels=['On-Screen', 'Under-Screen'],
                 values=[os_percent, us_percent],
-                hole=.4,
+                hole=0.4,
                 marker_colors=['#33a02c', '#1f78b4']
             )])
             pie_fig.update_layout(title_text="Mass Distribution")
@@ -640,8 +646,8 @@ elif current_page == "🥅 Screening":
             percentages_os = [0, 20, 50, 80, 100]
             sizes_us = [0, p20_us, p50_us, p80_us, (p50_us+(p80_us-p50_us)*5/3)]
             percentages_us = [0, 20, 50, 80, 100]
-            x_points_os = np.linspace(0, (p50_os+(p80_os-p50_os)*5/3) *1.25, 100)
-            x_points_us = np.linspace(0, (p50_us+(p80_us-p50_us)*5/3) *1.25, 100)
+            x_points_os = np.linspace(0, (p50_os+(p80_os-p50_os)*5/3)*1.25, 100)
+            x_points_us = np.linspace(0, (p50_us+(p80_us-p50_us)*5/3)*1.25, 100)
             y_points_os = np.interp(x_points_os, sizes_os, percentages_os)
             y_points_us = np.interp(x_points_us, sizes_us, percentages_us)
             Onscreen_oversize_value = np.interp(css, sizes_os, percentages_os)
@@ -662,8 +668,8 @@ elif current_page == "🥅 Screening":
             st.plotly_chart(fig, use_container_width=True)
             st.markdown(
             f"""
-            <div style='padding:10px;border-radius:8px;border:1px solid #444;background-color:#3b3b3b;color:#FFFFFF;'>
-                <strong>Screen Efficiency: { ((Underscreen_oversize_value-blasting_oversize_value)/(Underscreen_oversize_value-Onscreen_oversize_value))*100:.1f} %</strong>
+            <div style='padding:10px; border-radius:8px; border:1px solid #444; background-color:#3b3b3b; color:#FFFFFF;'>
+                <strong>Screen Efficiency: { ((Underscreen_oversize_value - blasting_oversize_value) / (Underscreen_oversize_value - Onscreen_oversize_value))*100:.1f} %</strong>
             </div>
             """,
             unsafe_allow_html=True)
@@ -675,7 +681,7 @@ elif current_page == "🥅 Screening":
             for css_val in css_values:
                 onscreen_value = np.interp(css_val, sizes_os, percentages_os)
                 underscreen_value = np.interp(css_val, sizes_us, percentages_us)
-                efficiency = (((underscreen_value-blasting_oversize_value)/(underscreen_value-onscreen_value))*100)
+                efficiency = (((underscreen_value - blasting_oversize_value) / (underscreen_value - onscreen_value)) * 100)
                 efficiencies.append(efficiency)
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=css_values, y=efficiencies, mode='lines', name='Screen Efficiency'))
@@ -732,13 +738,13 @@ elif current_page == "⚙️ Crusher":
         feed_y_points = np.interp(feed_x_points, feed_sizes, percentages)
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=product_x_points, y=product_y_points, mode='lines', 
-                                name='Product Size Distribution', line=dict(color='orange')))
+                                 name='Product Size Distribution', line=dict(color='#fb9a99')))
         fig.add_trace(go.Scatter(x=product_sizes, y=percentages, mode='markers', 
-                                name='Key Points', marker=dict(size=10, color='red')))
+                                 name='Key Points', marker=dict(size=10, color='red')))
         fig.add_trace(go.Scatter(x=feed_x_points, y=feed_y_points, mode='lines', 
-                                name='Feed Size Distribution', line=dict(color='green')))
+                                 name='Feed Size Distribution', line=dict(color='#33a02c')))
         fig.add_trace(go.Scatter(x=feed_sizes, y=percentages, mode='markers', 
-                                name='Key Points', marker=dict(size=10, color='red')))
+                                 name='Key Points', marker=dict(size=10, color='red')))
         fig.add_vline(x=Crushing_target_p80, line_dash="dash", line_color="red", annotation_text="Target P80")
         fig.update_layout(
             title='Fragmentation Size Distribution',
