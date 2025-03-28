@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import folium
 from streamlit_folium import st_folium
-
+st.set_page_config(page_title="Mining Process Overview", layout="wide")
 # ------------------------------
 # Set up base directory and load models (using relative paths)
 # ------------------------------
