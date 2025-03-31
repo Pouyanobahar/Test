@@ -22,10 +22,13 @@ st.set_page_config(
 
 # Top header with logo and title (update URL to your logo as needed)
 def render_header():
-    logo_path = "assets/genesis-mining-logo-vector.png"
-    logo_base64 = get_base64_of_bin_file(logo_path)
+    logo_path = "genesis-mining-logo-vector.png"  # Use relative path
+    # Read the image file in binary mode
+    with open(logo_path, "rb") as f:
+        logo_bytes = f.read()
+    logo_base64 = base64.b64encode(logo_bytes).decode("utf-8")
     header_html = f"""
-    <div style="display: flex; align-items: center; margin-top: 0px; padding: 0 0 10px 0;">
+    <div style="display: flex; align-items: center; margin-top: 0; padding-bottom: 10px;">
         <img src="data:image/png;base64,{logo_base64}" style="height: 100px; margin-right: 20px;">
         <h1 style="color: #2D3B44; margin: 0;">Mining Process Optimization Dashboard</h1>
     </div>
