@@ -528,50 +528,56 @@ elif current_page == "💥 Blasting":
                 st.markdown("### Sensitivity Analysis Summary")
                 st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
         
+            # Drilling & Blasting Cost section (now correctly outdented)
         st.markdown("---")
         st.subheader("Drilling & Blasting Cost")
-        # Use four columns for cost details
-        cost_cols = st.columns(4)
-        with cost_cols[0]:
+        cost_col1, cost_col2, cost_col3, cost_col4 = st.columns(4)
+     
+        with cost_col1:
             st.markdown("### Drilling Parameters")
-            hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0)
-            stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0)
-            sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0)
-            blasting_area = st.number_input("Blasting area (m²)", min_value=500, value=2000, step=50)
+            hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0, key="hole_length_cost")
+            stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0, key="stemming_cost")
+            sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0, key="sub_drilling_cost")
+            blasting_area = st.number_input("Blasting area (m2)", min_value=500, value=2000, step=50, key="blasting_area_cost")
             num_holes = blasting_area // (burden * spacing)
-        with cost_cols[1]:
+     
+        with cost_col2:
             st.markdown("### Economic Parameters")
             explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
             detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
-            accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0)
-            labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0)
-            selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()))
-            selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()))
+            accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0, key="accessory_cost")
+            labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0, key="labor_cost")
+            selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()), key="selected_explosive")
+            selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()), key="selected_detonator")
             explosive_cost_per_kg = explosive_types[selected_explosive]
             detonator_cost = detonator_types[selected_detonator]
+     
         def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
             hole_diameter_m = hole_diameter_mm / 1000
             charge_length = hole_length - stemming + sub_drilling
             charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
-            charge_mass = charge_volume * explosive_density * 1000  # in kg
+            charge_mass = charge_volume * explosive_density * 1000  # kg
             total_charge = charge_mass * num_holes
             return charge_mass, total_charge
+     
         charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
         total_explosive_cost = total_charge * explosive_cost_per_kg
-        total_drilling_cost = hole_length * num_holes * 50
+        total_drilling_cost = hole_length * num_holes * 50  # Example drilling rate: $50/m
         total_detonator_cost = detonator_cost * num_holes
         total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
         cost_distribution = pd.DataFrame({
             'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
             'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
         })
-        with cost_cols[2]:
+     
+        with cost_col3:
             st.subheader("Cost Distribution")
-            pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)', color_discrete_sequence=pie_colors)
+            pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)')
             st.plotly_chart(pie_fig, use_container_width=True)
-        with cost_cols[3]:
-            cost_subcols = st.columns(2)
-            with cost_subcols[0]:
+     
+        with cost_col4:
+            inner_col1, inner_col2 = st.columns(2)
+            with inner_col1:
                 st.subheader("Total Blasting Cost")
                 st.markdown(f"""
                 <div class="box">
@@ -584,7 +590,8 @@ elif current_page == "💥 Blasting":
                 <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
                 </div>
                 """, unsafe_allow_html=True)
-            with cost_subcols[1]:
+     
+            with inner_col2:
                 st.subheader("Total Blasting Explosives")
                 st.markdown(f"""
                 <div class="box">
@@ -593,7 +600,6 @@ elif current_page == "💥 Blasting":
                 <li><strong>Total Charge:</strong> {total_charge:.2f} kg</li>
                 <li><strong>Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
                 <li><strong>Total Detonators:</strong> {num_holes:.0f}</li>
-                </ul>
                 </div>
                 """, unsafe_allow_html=True)
 
