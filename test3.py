@@ -408,41 +408,45 @@ if current_page == "👁️ Overview":
 # ------------------------------
 elif current_page == "💥 Blasting":
     st.markdown("<h1 style='font-weight:bold;'>Blasting Analysis</h1>", unsafe_allow_html=True)
-    
-    # Use two columns with a wider left column (ratio 2:1)
-    wide_col, narrow_col = st.columns([2, 1])
-    
-    with narrow_col:
-        st.subheader("Input Parameters")
-        with st.expander("Rock Properties", expanded=True):
-            ucs = st.slider("UCS (MPa)", 46.0, 60.0, 50.0, step=2.0, key="ucs_blasting", help="Uniaxial Compressive Strength")
-            youngs_mod = st.slider("Young's Modulus (GPa)", 8.0, 12.0, 10.0, step=1.0, key="youngs_mod_blasting", help="Elastic modulus")
-        with st.expander("Blast Design", expanded=True):
-            burden = st.slider("Burden (m)", 5.0, 8.0, 6.0, step=0.5, key="burden_blasting", help="Distance from the free face")
-            spacing = st.slider("Spacing (m)", 5.0, 8.0, 6.0, step=0.5, key="spacing_blasting", help="Distance between blast holes")
-            hole_diameter = st.slider("Hole Diameter (mm)", 180, 240, 200, step=10, key="hole_diameter_blasting", help="Diameter of the blast hole")
-        with st.expander("Explosive Properties", expanded=True):
-            explosive_density = st.slider("Explosives Density (g/cm³)", 0.8, 1.2, 1.0, step=0.1, key="explosive_density_blasting", help="Density of the explosive")
-            vod = st.slider("VOD (m/s)", 4000, 6000, 4500, step=500, key="vod_blasting", help="Velocity of Detonation")
-        powder_factor = (explosive_density*1000 * (((hole_diameter/1000)**2)/4) * 3.1415) / (burden * spacing)
-        st.info(f"Calculated Powder Factor: {powder_factor:.2f} kg/m³")
-    
-    with wide_col:
-        st.subheader("Results & Analysis")
-        # Run blasting prediction and plot size distribution
+    blast_col1, blast_col2 = st.columns(2)
+ 
+    with blast_col1:
+        st.markdown('<div class="my-box">', unsafe_allow_html=True)
+        with st.container():
+            st.subheader("Input Parameters")
+            with st.expander("Rock Properties", expanded=True):
+                ucs = st.slider("UCS (MPa)", 46.0, 60.0, 50.0, step=2.0, key="ucs_blasting")
+                youngs_mod = st.slider("Young's Modulus (GPa)", 8.0, 12.0, 10.0, step=1.0, key="youngs_mod_blasting")
+            with st.expander("Blast Design", expanded=True):
+                burden = st.slider("Burden (m)", 5.0, 8.0, 6.0, step=0.5, key="burden_blasting")
+                spacing = st.slider("Spacing (m)", 5.0, 8.0, 6.0, step=0.5, key="spacing_blasting")
+                hole_diameter = st.slider("Hole Diameter (mm)", 180, 240, 200, step=10, key="hole_diameter_blasting")
+            with st.expander("Explosive Properties", expanded=True):
+                explosive_density = st.slider("Explosives Density (g/cm³)", 0.8, 1.2, 1.0, step=0.1, key="explosive_density_blasting")
+                vod = st.slider("VOD (m/s)", 4000, 6000, 4500, step=500, key="vod_blasting")
+            powder_factor = (explosive_density * 1000 * (((hole_diameter/1000)**2)/4) * 3.1415) / (burden * spacing)
+            st.info(f"Calculated Powder Factor: {powder_factor:.2f} kg/m³")
+        st.markdown('</div>', unsafe_allow_html=True)
+ 
+    with blast_col2:
+        st.markdown('<div class="my-box">', unsafe_allow_html=True)
+        # Prediction results
         P20, P50, P80, input_data = blasting_prediction(
             ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod
         )
+        if P20 is None or P50 is None or P80 is None:
+            st.error("Model predictions are unavailable. Please check that all models are loaded correctly.")
+            st.stop()
         sizes = [0, P20, P50, P80, P80*1.1, P80*1.25]
         percentages = [0, 20, 50, 80, 90, 100]
         x_points = np.linspace(0, P80*1.25, 100)
         y_points = np.interp(x_points, sizes, percentages)
         blasting_oversize_value = np.interp(10, sizes, percentages)
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=x_points, y=y_points, mode='lines', 
-                                 name='Size Distribution', line=dict(color='#1f78b4')))
-        fig.add_trace(go.Scatter(x=sizes, y=percentages, mode='markers', 
-                                 name='Key Points', marker=dict(size=10, color='red')))
+        fig.add_trace(go.Scatter(x=x_points, y=y_points, mode='lines', name='Size Distribution',
+                                 line=dict(color='royalblue')))
+        fig.add_trace(go.Scatter(x=sizes, y=percentages, mode='markers', name='Key Points',
+                                 marker=dict(size=10, color='red')))
         fig.update_layout(
             title='Fragmentation Size Distribution',
             xaxis_title='Fragment Size (mm)',
@@ -451,157 +455,178 @@ elif current_page == "💥 Blasting":
             yaxis=dict(range=[0, 105])
         )
         st.plotly_chart(fig, use_container_width=True)
+ 
         p80_diff = P80 - Blasting_target_p80
         status = "✅ Close to target" if abs(p80_diff) < 20 else "❌ Far from target"
         st.markdown(
             f"""
-            <div style='padding:10px; border-radius:8px; border:1px solid #444; background-color:#3b3b3b; color:#FFFFFF;'>
-                <strong>Target P80: {Blasting_target_p80:.1f} mm | Difference: {p80_diff:.1f} mm | {status}</strong>
+            <div style='padding:10px;border-radius:8px;border:1px solid #444;
+                        background-color:#3b3b3b;color:#FFFFFF;'>
+                <strong>Target P80: {Blasting_target_p80:.1f} mm | 
+                Difference: {p80_diff:.1f} mm | {status}</strong>
             </div>
             """,
             unsafe_allow_html=True
         )
-        
-        st.markdown("---")
-        # Sensitivity Analysis: Place in a wide row using 3 columns
-        st.subheader("Parameter Impact Analysis")
-        shap_metric = st.selectbox("Select which metric to analyze with SHAP", ["P20", "P50", "P80"], key="shap_metric_blasting")
-        chosen_model = models.get(f"blasting_{shap_metric.lower()}")
-        explainer = shap.Explainer(chosen_model)
-        shap_values = explainer(input_data)
-        fig_shap, ax = plt.subplots(figsize=(8, 3))
-        shap.waterfall_plot(
-            shap.Explanation(
-                values=shap_values.values[0], 
-                base_values=shap_values.base_values[0], 
-                data=input_data.iloc[0]
-            ),
-            show=False
-        )
-        st.pyplot(fig_shap)
-        
-        sensitivity_ranges = {
-            "Burden (m)": np.linspace(5.0, 8.0, 20),
-            "Spacing (m)": np.linspace(5.0, 8.0, 20),
-            "Hole Diameter (mm)": np.linspace(180, 240, 20),
-            "UCS (MPa)": np.linspace(46.0, 60.0, 20),
-            "Young's Modulus (GPa)": np.linspace(8.0, 12.0, 20),
-            "Explosives Density - gr/cm3": np.linspace(0.8, 1.2, 20),
-            "VOD - (m/s)": np.linspace(4000, 6000, 20)
-        }
-        sensitivity_param = st.selectbox("Select Parameter for Sensitivity Analysis", list(sensitivity_ranges.keys()), key="sensitivity_param_blasting")
-        base_input = pd.DataFrame([[ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod]], 
-                                  columns=["UCS (MPa)", "Young's Modulus (GPa)", "Burden (m)", "Spacing (m)", "Hole Diameter (mm)", "Explosives Density - gr/cm3", "VOD - (m/s)"])
-        col1_sa, col2_sa, col3_sa = st.columns(3)
-        metrics = [("P20", col1_sa), ("P50", col2_sa), ("P80", col3_sa)]
-        for metric, col in metrics:
-            with col:
-                st.subheader(f"Sensitivity Analysis for {metric}")
-                chosen_model = models.get(f"blasting_{metric.lower()}")
-                if chosen_model is None:
-                    st.error(f"Model for blasting {metric} is not loaded.")
-                    continue
-                explainer = shap.Explainer(chosen_model)
-                sensitivity_data = []
-                for val in sensitivity_ranges[sensitivity_param]:
-                    modified_input = base_input.copy()
-                    modified_input[sensitivity_param] = val
-                    shap_values_metric = explainer(modified_input)
-                    prediction_metric = chosen_model.predict(modified_input)[0]
-                    param_index = list(base_input.columns).index(sensitivity_param)
-                    param_impact = shap_values_metric.values[0][param_index]
-                    sensitivity_data.append({
-                        "Parameter Value": val,
-                        f"{metric} Prediction": prediction_metric,
-                        "SHAP Impact": param_impact
-                    })
-                sens_df = pd.DataFrame(sensitivity_data)
-                chart = px.line(
-                    sens_df, 
-                    x="Parameter Value", 
-                    y="SHAP Impact",
-                    title=f"SHAP Impact of {sensitivity_param} on {metric}",
-                    labels={"Parameter Value": sensitivity_param, "SHAP Impact": f"Impact on {metric}"}
-                )
-                chart.add_hline(y=0, line_dash="dash", line_color="red")
-                st.plotly_chart(chart)
-                st.markdown("### Sensitivity Analysis Summary")
-                st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
-        
-            # Drilling & Blasting Cost section (now correctly outdented)
-        st.markdown("---")
-        st.subheader("Drilling & Blasting Cost")
-        cost_col1, cost_col2, cost_col3, cost_col4 = st.columns(4)
-     
-        with cost_col1:
-            st.markdown("### Drilling Parameters")
-            hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0, key="hole_length_cost")
-            stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0, key="stemming_cost")
-            sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0, key="sub_drilling_cost")
-            blasting_area = st.number_input("Blasting area (m2)", min_value=500, value=2000, step=50, key="blasting_area_cost")
-            num_holes = blasting_area // (burden * spacing)
-     
-        with cost_col2:
-            st.markdown("### Economic Parameters")
-            explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
-            detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
-            accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0, key="accessory_cost")
-            labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0, key="labor_cost")
-            selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()), key="selected_explosive")
-            selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()), key="selected_detonator")
-            explosive_cost_per_kg = explosive_types[selected_explosive]
-            detonator_cost = detonator_types[selected_detonator]
-     
-        def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
-            hole_diameter_m = hole_diameter_mm / 1000
-            charge_length = hole_length - stemming + sub_drilling
-            charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
-            charge_mass = charge_volume * explosive_density * 1000  # kg
-            total_charge = charge_mass * num_holes
-            return charge_mass, total_charge
-     
-        charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
-        total_explosive_cost = total_charge * explosive_cost_per_kg
-        total_drilling_cost = hole_length * num_holes * 50  # Example drilling rate: $50/m
-        total_detonator_cost = detonator_cost * num_holes
-        total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
-        cost_distribution = pd.DataFrame({
-            'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
-            'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
-        })
-     
-        with cost_col3:
-            st.subheader("Cost Distribution")
-            pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)')
-            st.plotly_chart(pie_fig, use_container_width=True)
-     
-        with cost_col4:
-            inner_col1, inner_col2 = st.columns(2)
-            with inner_col1:
-                st.subheader("Total Blasting Cost")
-                st.markdown(f"""
-                <div class="box">
-                <ul>
-                <li><strong>Explosives Cost:</strong> ${total_explosive_cost:.2f}</li>
-                <li><strong>Drilling Cost:</strong> ${total_drilling_cost:.2f}</li>
-                <li><strong>Detonator Cost:</strong> ${(detonator_cost*num_holes):.2f}</li>
-                <li><strong>Accessories Cost:</strong> ${accessory_cost:.2f}</li>
-                </ul>
-                <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-     
-            with inner_col2:
-                st.subheader("Total Blasting Explosives")
-                st.markdown(f"""
-                <div class="box">
-                <ul>
-                <li><strong>Total Holes:</strong> {num_holes:.2f}</li>
-                <li><strong>Total Charge:</strong> {total_charge:.2f} kg</li>
-                <li><strong>Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
-                <li><strong>Total Detonators:</strong> {num_holes:.0f}</li>
-                </div>
-                """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+ 
+    # Parameter Impact Analysis (outside the container boxes)
+    st.subheader("Parameter Impact Analysis")
+    shap_metric = st.selectbox("Select which metric to analyze with SHAP", ["P20", "P50", "P80"], key="shap_metric_blasting")
+    if shap_metric == "P20":
+        chosen_model = models["blasting_p20"]
+    elif shap_metric == "P50":
+        chosen_model = models["blasting_p50"]
+    else:
+        chosen_model = models["blasting_p80"]
+    explainer = shap.Explainer(chosen_model)
+    shap_values = explainer(input_data)
+    fig_shap, ax = plt.subplots(figsize=(8, 3))
+    shap.waterfall_plot(
+        shap.Explanation(
+            values=shap_values.values[0],
+            base_values=shap_values.base_values[0],
+            data=input_data.iloc[0]
+        ),
+        show=False
+    )
+    st.pyplot(fig_shap)
+ 
+    # Sensitivity Analysis (still part of the blasting page, but not inside any container)
+    sensitivity_ranges = {
+        "Burden (m)": np.linspace(5.0, 8.0, 20),
+        "Spacing (m)": np.linspace(5.0, 8.0, 20),
+        "Hole Diameter (mm)": np.linspace(180, 240, 20),
+        "UCS (MPa)": np.linspace(46.0, 60.0, 20),
+        "Young's Modulus (GPa)": np.linspace(8.0, 12.0, 20),
+        "Explosives Density - gr/cm3": np.linspace(0.8, 1.2, 20),
+        "VOD - (m/s)": np.linspace(4000, 6000, 20)
+    }
+    sensitivity_param = st.selectbox(
+        "Select Parameter for Sensitivity Analysis",
+        list(sensitivity_ranges.keys()),
+        key="sensitivity_param_blasting"
+    )
+    base_input = pd.DataFrame([[ucs, youngs_mod, burden, spacing, hole_diameter, explosive_density, vod]],
+                              columns=[
+                                  "UCS (MPa)",
+                                  "Young's Modulus (GPa)",
+                                  "Burden (m)",
+                                  "Spacing (m)",
+                                  "Hole Diameter (mm)",
+                                  "Explosives Density - gr/cm3",
+                                  "VOD - (m/s)"
+                              ])
+    sens_col1, sens_col2, sens_col3 = st.columns(3)
+    metrics = [("P20", sens_col1), ("P50", sens_col2), ("P80", sens_col3)]
+    for metric, col in metrics:
+        with col:
+            st.subheader(f"Sensitivity Analysis for {metric}")
+            chosen_model = models.get(f"blasting_{metric.lower()}")
+            if chosen_model is None:
+                st.error(f"Model for blasting {metric} is not loaded.")
+                continue
+            explainer = shap.Explainer(chosen_model)
+            sensitivity_data = []
+            for val in sensitivity_ranges[sensitivity_param]:
+                modified_input = base_input.copy()
+                modified_input[sensitivity_param] = val
+                shap_values_metric = explainer(modified_input)
+                prediction_metric = chosen_model.predict(modified_input)[0]
+                param_index = list(base_input.columns).index(sensitivity_param)
+                param_impact = shap_values_metric.values[0][param_index]
+                sensitivity_data.append({
+                    "Parameter Value": val,
+                    f"{metric} Prediction": prediction_metric,
+                    "SHAP Impact": param_impact
+                })
+            sens_df = pd.DataFrame(sensitivity_data)
+            chart = px.line(
+                sens_df,
+                x="Parameter Value",
+                y="SHAP Impact",
+                title=f"SHAP Impact of {sensitivity_param} on {metric}",
+                labels={"Parameter Value": sensitivity_param, "SHAP Impact": f"Impact on {metric}"}
+            )
+            chart.add_hline(y=0, line_dash="dash", line_color="red")
+            st.plotly_chart(chart)
+            st.markdown("### Sensitivity Analysis Summary")
+            st.metric("Max Impact", f"{sens_df['SHAP Impact'].max():.2f}")
+ 
+    # Drilling & Blasting Cost section (now correctly outdented)
+    st.markdown("---")
+    st.subheader("Drilling & Blasting Cost")
+    cost_col1, cost_col2, cost_col3, cost_col4 = st.columns(4)
+ 
+    with cost_col1:
+        st.markdown("### Drilling Parameters")
+        hole_length = st.number_input("Hole Length (m)", min_value=0.0, value=10.0, key="hole_length_cost")
+        stemming = st.number_input("Stemming (m)", min_value=0.0, value=3.0, key="stemming_cost")
+        sub_drilling = st.number_input("Subdrilling (m)", min_value=0.0, value=2.0, key="sub_drilling_cost")
+        blasting_area = st.number_input("Blasting area (m2)", min_value=500, value=2000, step=50, key="blasting_area_cost")
+        num_holes = blasting_area // (burden * spacing)
+ 
+    with cost_col2:
+        st.markdown("### Economic Parameters")
+        explosive_types = {"ANFO": 0.9, "Heavy ANFO": 1.1, "Emulsion": 1.2, "Watergel": 1.0}
+        detonator_types = {"Non-electric": 15, "Electric": 25, "Electronic": 35}
+        accessory_cost = st.number_input("Accessories Cost per blast ($)", min_value=0.0, value=5000.0, key="accessory_cost")
+        labor_cost = st.number_input("Labor Cost per blast ($)", min_value=0.0, value=2000.0, key="labor_cost")
+        selected_explosive = st.selectbox("Select Explosive Type", list(explosive_types.keys()), key="selected_explosive")
+        selected_detonator = st.selectbox("Select Detonator Type", list(detonator_types.keys()), key="selected_detonator")
+        explosive_cost_per_kg = explosive_types[selected_explosive]
+        detonator_cost = detonator_types[selected_detonator]
+ 
+    def calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter_mm, num_holes):
+        hole_diameter_m = hole_diameter_mm / 1000
+        charge_length = hole_length - stemming + sub_drilling
+        charge_volume = np.pi * (hole_diameter_m / 2)**2 * charge_length
+        charge_mass = charge_volume * explosive_density * 1000  # kg
+        total_charge = charge_mass * num_holes
+        return charge_mass, total_charge
+ 
+    charge_mass, total_charge = calculate_charge(hole_length, stemming, sub_drilling, explosive_density, hole_diameter, num_holes)
+    total_explosive_cost = total_charge * explosive_cost_per_kg
+    total_drilling_cost = hole_length * num_holes * 50  # Example drilling rate: $50/m
+    total_detonator_cost = detonator_cost * num_holes
+    total_blasting_cost = total_explosive_cost + total_detonator_cost + accessory_cost + total_drilling_cost + labor_cost
+    cost_distribution = pd.DataFrame({
+        'Cost Component': ['Explosives', 'Drilling', 'Detonator', 'Accessories', 'Operational Cost'],
+        'Cost ($)': [total_explosive_cost, total_drilling_cost, total_detonator_cost, accessory_cost, labor_cost]
+    })
+ 
+    with cost_col3:
+        st.subheader("Cost Distribution")
+        pie_fig = px.pie(cost_distribution, names='Cost Component', values='Cost ($)')
+        st.plotly_chart(pie_fig, use_container_width=True)
+ 
+    with cost_col4:
+        inner_col1, inner_col2 = st.columns(2)
+        with inner_col1:
+            st.subheader("Total Blasting Cost")
+            st.markdown(f"""
+            <div class="box">
+            <ul>
+            <li><strong>Explosives Cost:</strong> ${total_explosive_cost:.2f}</li>
+            <li><strong>Drilling Cost:</strong> ${total_drilling_cost:.2f}</li>
+            <li><strong>Detonator Cost:</strong> ${(detonator_cost*num_holes):.2f}</li>
+            <li><strong>Accessories Cost:</strong> ${accessory_cost:.2f}</li>
+            </ul>
+            <h4>Grand Total: ${total_blasting_cost:.2f}</h4>
+            </div>
+            """, unsafe_allow_html=True)
+ 
+        with inner_col2:
+            st.subheader("Total Blasting Explosives")
+            st.markdown(f"""
+            <div class="box">
+            <ul>
+            <li><strong>Total Holes:</strong> {num_holes:.2f}</li>
+            <li><strong>Total Charge:</strong> {total_charge:.2f} kg</li>
+            <li><strong>Total Drilling:</strong> {(hole_length*num_holes):.2f} m</li>
+            <li><strong>Total Detonators:</strong> {num_holes:.0f}</li>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ------------------------------
 # Screening and Crusher pages remain similar...
