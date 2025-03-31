@@ -270,10 +270,9 @@ if current_page == "👁️ Overview":
         """, unsafe_allow_html=True)
     
     st.markdown("---")
-    # Use tabs to separate different chart sections
-    tab_flow, tab_energy, tab_cost, tab_location = st.tabs(["Process Flow", "Energy", "Cost", "Location"])
+    col1, col2, col3, col4 = st.columns(4)
     
-    with tab_flow:
+    with col1:
         st.subheader("Process Flow Visualization")
         os_mass = st.session_state.process_data['screening']['onscreen']['mass'] or 60
         total_mass = 450
@@ -281,7 +280,8 @@ if current_page == "👁️ Overview":
         sankey_fig = create_sankey_diagram(total_mass, os_mass, us_mass)
         st.plotly_chart(sankey_fig, use_container_width=True)
     
-    with tab_energy:
+    with col2:
+        st.subheader("Energy Consumption")
         energy_data = {
             "Blasting": 250,
             "Screening": 150,
@@ -289,7 +289,6 @@ if current_page == "👁️ Overview":
             "Milling": 300,
             "Transportation": 200
         }
-        # Use a unified color palette for the pie chart
         pie_colors = ['#1f78b4', '#33a02c', '#b2df8a', '#fb9a99', '#a6cee3']
         fig_energy = go.Figure(data=[go.Pie(
             labels=list(energy_data.keys()),
@@ -298,12 +297,13 @@ if current_page == "👁️ Overview":
             marker=dict(colors=pie_colors)
         )])
         fig_energy.update_layout(
-            title_text="Energy Consumption by Mining Section",
-            annotations=[dict(text='Energy (kWh)', x=0.5, y=0.5, font_size=15, showarrow=False)]
+            title_text="Energy Consumption",
+            annotations=[dict(text='kWh', x=0.5, y=0.5, font_size=15, showarrow=False)]
         )
         st.plotly_chart(fig_energy, use_container_width=True)
     
-    with tab_cost:
+    with col3:
+        st.subheader("Cost Distribution")
         cost_data = {
             "Blasting": 2.5,
             "Screening": 1.8,
@@ -318,12 +318,13 @@ if current_page == "👁️ Overview":
             marker=dict(colors=pie_colors)
         )])
         fig_cost.update_layout(
-            title_text="Cost Distribution by Mining Section",
-            annotations=[dict(text='Cost ($/ton)', x=0.5, y=0.5, font_size=15, showarrow=False)]
+            title_text="Cost ($/ton)",
+            annotations=[dict(text='$/ton', x=0.5, y=0.5, font_size=15, showarrow=False)]
         )
         st.plotly_chart(fig_cost, use_container_width=True)
     
-    with tab_location:
+    with col4:
+        st.subheader("Project Location")
         latitude, longitude = -34.9285, 138.6007
         m = folium.Map(location=[latitude, longitude], zoom_start=3)
         folium.Marker(
@@ -331,8 +332,8 @@ if current_page == "👁️ Overview":
             popup="Project Location",
             icon=folium.Icon(color="red", icon="info-sign")
         ).add_to(m)
-        st.subheader("Project Location")
         st_folium(m, width=500, height=400)
+
     
     st.markdown("---")
     st.subheader("Process Optimization Recommendations")
