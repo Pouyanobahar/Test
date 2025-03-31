@@ -22,7 +22,7 @@ st.set_page_config(
 
 # Top header with logo and title (update URL to your logo as needed)
 def render_header():
-    logo_path = "genesis-mining-logo-vector.png"  # Use a relative path now
+    logo_path = "assets/genesis-mining-logo-vector.png"
     logo_base64 = get_base64_of_bin_file(logo_path)
     header_html = f"""
     <div style="display: flex; align-items: center; margin-top: 0px; padding: 0 0 10px 0;">
