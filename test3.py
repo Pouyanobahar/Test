@@ -365,7 +365,11 @@ if current_page == "👁️ Overview":
     st.markdown("---")
     # Ensure these KPI variables are computed from your process data:
     # total_power, energy_efficiency, product_quality, operating_cost
-    
+    # Define KPI values if not already computed
+    total_power = 200            # e.g., processing rate in ton/h
+    energy_efficiency = 2.5        # e.g., in kWh/ton
+    product_quality = 95           # e.g., as a percentage
+    operating_cost = 4.5           # e.g., in $/ton
     # Gauge 1: Total Processing Rate (ton/h)
     fig1 = go.Figure(go.Indicator(
         mode="gauge+number",
