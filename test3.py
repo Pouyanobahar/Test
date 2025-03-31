@@ -346,22 +346,22 @@ if current_page == "👁️ Overview":
         st_folium(m, width=500, height=400)
 
     
-   st.markdown("---")
-        st.subheader("Process Optimization Recommendations")
-        rec_col1, rec_col2, rec_col3 = st.columns(3)
-        with rec_col1:
-            st.markdown("""#### Blasting
+    st.markdown("---")
+    st.subheader("Process Optimization Recommendations")
+    rec_col1, rec_col2, rec_col3 = st.columns(3)
+    with rec_col1:
+        st.markdown("""#### Blasting
     - Decrease burden by 0.5m  
     - Increase explosive density for hard rock""")
-        with rec_col2:
-            st.markdown("""#### Screening
+    with rec_col2:
+        st.markdown("""#### Screening
     - Adjust screen angle  
     - Increase washing water by 15%""")
-        with rec_col3:
-            st.markdown("""#### Crushing
+    with rec_col3:
+        st.markdown("""#### Crushing
     - Decrease CSS by 5mm  
     - Adjust eccentric speed to reduce power consumption""")
-        
+    
     st.markdown("---")
     # Ensure these KPI variables are computed from your process data:
     # total_power, energy_efficiency, product_quality, operating_cost
@@ -461,6 +461,7 @@ if current_page == "👁️ Overview":
             mime="text/csv",
             key="download_report"
         )
+
 # ------------------------------
 # Blasting Page (with Wide Left Column for Analysis)
 # ------------------------------
