@@ -362,7 +362,7 @@ if current_page == "👁️ Overview":
     - Decrease CSS by 5mm  
     - Adjust eccentric speed to reduce power consumption""")
         
-        st.markdown("---")
+    st.markdown("---")
     # Ensure these KPI variables are computed from your process data:
     # total_power, energy_efficiency, product_quality, operating_cost
     
