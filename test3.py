@@ -21,12 +21,16 @@ st.set_page_config(
 )
 
 # Top header with logo and title (update URL to your logo as needed)
-st.markdown("""
-<div style="display:flex; align-items:center; padding:10px 0;">
-    <img src="https://via.placeholder.com/150" style="height:60px; margin-right:20px;">
-    <h1 style="color:#2D3B44; margin:0;">Mining Process Optimization Dashboard</h1>
-</div>
-""", unsafe_allow_html=True)
+def render_header():
+    logo_path = "genesis-mining-logo-vector.png"  # Use a relative path now
+    logo_base64 = get_base64_of_bin_file(logo_path)
+    header_html = f"""
+    <div style="display: flex; align-items: center; margin-top: 0px; padding: 0 0 10px 0;">
+        <img src="data:image/png;base64,{logo_base64}" style="height: 100px; margin-right: 20px;">
+        <h1 style="color: #2D3B44; margin: 0;">Mining Process Optimization Dashboard</h1>
+    </div>
+    """
+    st.markdown(header_html, unsafe_allow_html=True)
 
 # ------------------------------
 # Set up base directory and load models (using relative paths)
