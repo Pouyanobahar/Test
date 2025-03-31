@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import folium
 from streamlit_folium import st_folium
+import base64  # <-- Add this import
 
 # ------------------------------
 # Set up page config and header banner
@@ -34,6 +35,9 @@ def render_header():
     </div>
     """
     st.markdown(header_html, unsafe_allow_html=True)
+
+# Call the header function so it renders the logo and title
+render_header()
 
 # ------------------------------
 # Set up base directory and load models (using relative paths)
