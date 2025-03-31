@@ -363,31 +363,79 @@ if current_page == "👁️ Overview":
 - Adjust eccentric speed to reduce power consumption""")
     
     st.markdown("---")
-    st.subheader("KPIs")
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    final_p80 = st.session_state.process_data['crushing']['p80']
-    total_power = st.session_state.process_data['crushing']['power']
-    feed_mass = st.session_state.process_data['screening']['onscreen']['mass'] + st.session_state.process_data['screening']['underscreen']['mass']
-    energy_efficiency = total_power / feed_mass if feed_mass > 0 else 0
-    product_quality = 100 - abs(final_p80 - Blasting_target_p80) / Blasting_target_p80 * 100 if Blasting_target_p80 > 0 else 0
-    operating_cost = cost_per_ton + (energy_efficiency * energy_cost)
+        # Assume these variables are already computed from your process data:
+    # total_power, energy_efficiency, product_quality, operating_cost
     
-    # Optionally, you can include a gauge indicator for one key metric:
-    gauge_fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = blasting_p80,
-        title = {"text": "Blasting P80"},
-        gauge = {"axis": {"range": [None, 700]},
-                 "bar": {"color": "#1f78b4"}}
+    # Gauge 1: Total Processing Rate (e.g., ton/h)
+    fig1 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=total_power,
+        title={'text': "Total Processing Rate (ton/h)"},
+        gauge={
+            'axis': {'range': [100, 300]},
+            'steps': [
+                {'range': [100, 150], 'color': "yellow"},
+                {'range': [150, 250], 'color': "green"},
+                {'range': [250, 300], 'color': "red"}
+            ]
+        }
     ))
-    with kpi1:
-        st.plotly_chart(gauge_fig, use_container_width=True)
-    with kpi2:
-        st.metric("Energy Efficiency", f"{energy_efficiency:.1f} kW/h")
-    with kpi3:
-        st.metric("Product Quality", f"{product_quality:.1f} %")
-    with kpi4:
-        st.metric("Operating Cost", f"${product_quality:.1f}/ton")
+    
+    # Gauge 2: Energy Efficiency (kWh/ton) - lower is better
+    fig2 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=energy_efficiency,
+        title={'text': "Energy Efficiency (kWh/ton)"},
+        gauge={
+            'axis': {'range': [0, 5]},
+            'steps': [
+                {'range': [0, 2], 'color': "green"},
+                {'range': [2, 3], 'color': "yellow"},
+                {'range': [3, 5], 'color': "red"}
+            ]
+        }
+    ))
+    
+    # Gauge 3: Product Quality (%)
+    fig3 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=product_quality,
+        title={'text': "Product Quality (%)"},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'steps': [
+                {'range': [0, 80], 'color': "red"},
+                {'range': [80, 90], 'color': "yellow"},
+                {'range': [90, 100], 'color': "green"}
+            ]
+        }
+    ))
+    
+    # Gauge 4: Operating Cost ($/ton) - lower is better
+    fig4 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=operating_cost,
+        title={'text': "Operating Cost ($/ton)"},
+        gauge={
+            'axis': {'range': [0, 10]},
+            'steps': [
+                {'range': [0, 3], 'color': "green"},
+                {'range': [3, 5], 'color': "yellow"},
+                {'range': [5, 10], 'color': "red"}
+            ]
+        }
+    ))
+    
+    # Display the four gauges in a row using st.columns:
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.plotly_chart(fig1, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig2, use_container_width=True)
+    with col3:
+        st.plotly_chart(fig3, use_container_width=True)
+    with col4:
+        st.plotly_chart(fig4, use_container_width=True)
 
     st.markdown("---")
     st.subheader("Report Generation")
