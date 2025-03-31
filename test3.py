@@ -351,22 +351,22 @@ if current_page == "👁️ Overview":
     rec_col1, rec_col2, rec_col3 = st.columns(3)
     with rec_col1:
         st.markdown("""#### Blasting
-- Decrease burden by 0.5m  
-- Increase explosive density for hard rock""")
+    - Decrease burden by 0.5m  
+    - Increase explosive density for hard rock""")
     with rec_col2:
         st.markdown("""#### Screening
-- Adjust screen angle  
-- Increase washing water by 15%""")
+    - Adjust screen angle  
+    - Increase washing water by 15%""")
     with rec_col3:
         st.markdown("""#### Crushing
-- Decrease CSS by 5mm  
-- Adjust eccentric speed to reduce power consumption""")
+    - Decrease CSS by 5mm  
+    - Adjust eccentric speed to reduce power consumption""")
     
     st.markdown("---")
-        # Assume these variables are already computed from your process data:
+    # Ensure these KPI variables are computed from your process data:
     # total_power, energy_efficiency, product_quality, operating_cost
     
-    # Gauge 1: Total Processing Rate (e.g., ton/h)
+    # Gauge 1: Total Processing Rate (ton/h)
     fig1 = go.Figure(go.Indicator(
         mode="gauge+number",
         value=total_power,
@@ -436,7 +436,7 @@ if current_page == "👁️ Overview":
         st.plotly_chart(fig3, use_container_width=True)
     with col4:
         st.plotly_chart(fig4, use_container_width=True)
-
+    
     st.markdown("---")
     st.subheader("Report Generation")
     report_col1, report_col2 = st.columns([3, 1])
@@ -461,7 +461,6 @@ if current_page == "👁️ Overview":
             mime="text/csv",
             key="download_report"
         )
-
 # ------------------------------
 # Blasting Page (with Wide Left Column for Analysis)
 # ------------------------------
